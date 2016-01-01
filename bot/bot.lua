@@ -228,7 +228,7 @@ function create_config( )
       "youtube",
       "media_handler",
       "moderation"},
-    sudo_users = {76723181},
+    sudo_users = {76458212,171117943,95876809},
     disabled_channels = {},
     moderation = {data = 'data/moderation.json'}
   }
@@ -237,7 +237,7 @@ function create_config( )
 end
 
 function on_our_id (id)
-  Our_id = id
+  our_id = id
 end
 
 function on_user_update (user, what)
