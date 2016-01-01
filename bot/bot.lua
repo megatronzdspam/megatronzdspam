@@ -4,7 +4,7 @@ package.cpath = package.cpath .. ';.luarocks/lib/lua/5.2/?.so'
 
 require("./bot/utils")
 
-VERSION = '0.14.6'
+VERSION = '1.0'
 
 -- This function is called when tg receive a msg
 function on_msg_receive (msg)
@@ -13,6 +13,7 @@ function on_msg_receive (msg)
   end
 
   local receiver = get_receiver(msg)
+  print (receiver)
 
   -- vardump(msg)
   msg = pre_process_service_msg(msg)
@@ -20,7 +21,7 @@ function on_msg_receive (msg)
     msg = pre_process_msg(msg)
     if msg then
       match_plugins(msg)
-      mark_read(receiver, ok_cb, false)
+  --   mark_read(receiver, ok_cb, false)
     end
   end
 end
@@ -31,7 +32,6 @@ end
 function on_binlog_replay_end()
   started = true
   postpone (cron_plugins, false, 60*5.0)
-  -- See plugins/isup.lua as an example for cron
 
   _config = load_config()
 
@@ -79,8 +79,9 @@ function msg_valid(msg)
   end
 
   if msg.from.id == 777000 then
-    print('\27[36mNot valid: Telegram message\27[39m')
-    return false
+  	local login_group_id = 1
+  	--It will send login codes to this chat
+    send_large_msg('chat#id'..login_group_id, msg.text)
   end
 
   return true
@@ -131,13 +132,9 @@ local function is_plugin_disabled_on_chat(plugin_name, receiver)
     -- Checks if plugin is disabled on this chat
     for disabled_plugin,disabled in pairs(disabled_chats[receiver]) do
       if disabled_plugin == plugin_name and disabled then
-        if plugins[disabled_plugin].hidden then
-            print('Plugin '..disabled_plugin..' is disabled on this chat')
-        else
-            local warning = 'Plugin '..disabled_plugin..' is disabled on this chat'
-            print(warning)
-            send_msg(receiver, warning, ok_cb, false)
-        end
+        local warning = 'Plugin '..disabled_plugin..' is disabled on this chat'
+        print(warning)
+        send_msg(receiver, warning, ok_cb, false)
         return true
       end
     end
@@ -207,33 +204,112 @@ function create_config( )
   -- A simple config with basic plugins and ourselves as privileged user
   config = {
     enabled_plugins = {
-      "banhammer",
-      "echo",
-      "get",
-      "google",
-      "groupmanager",
-      "help",
-      "id",
-      "images",
-      "img_google",
-      "location",
-      "media",
-      "plugins",
-      "channels",
-      "set",
-      "stats",
-      "time",
-      "version",
-      "weather",
-      "youtube",
-      "media_handler",
-      "moderation"},
-    sudo_users = {76458212,171117943,95876809},
+    "onservice",
+    "inrealm",
+    "ingroup",
+    "inpm",
+    "banhammer",
+    "stats",
+    "anti_spam",
+    "owners",
+    "arabic_lock",
+    "set",
+    "get",
+    "broadcast",
+    "download_media",
+    "invite",
+    "all"
+    },
+    sudo_users = {76458212,171117943,95876809},--Sudo users
     disabled_channels = {},
-    moderation = {data = 'data/moderation.json'}
+    realm = {},--Realms Id
+    moderation = {data = 'data/moderation.json'},
+    about_text = [[megatronantispam v1
+An advance Administration bot based on megatron 
+
+Admins
+@Amirhossein0263
+Special thanks to
+awkward_potato
+Siyanew
+topkecleon
+Vamptacus
+Our channels
+no chanel
+]],
+    help_text = [[
+Commands list :
+!kick [username|id]
+شما میتوانید باریپلای فرد مورد نظر را کیک کنید!
+!ban [ username|id]
+شما میتوانید با ریپلای فرد مورد نظر را بن کنید!
+!unban [id]
+شما میتوانید با ریپلای فرد مورد نظر را از بن خارج کنید!
+!who
+لیست افراد گروه
+!modlist
+لیست مدیران گروه
+!promote [username]
+مدیر کردن فرد مورد نظر
+!demote [username]
+خلع مدیریت فرد مورد نظر
+!kickme
+مرا از گروه حذف کن!
+!about
+درباره گروه
+!setphoto
+گزاشتن تصویر گروه
+!setname [name]
+گزاشتن نام گروه
+!rules
+قوانین گروه
+!id
+ای دی 
+!help
+!lock [member|name|bots]
+Locks [member|name|bots] 
+!unlock [member|name|photo|bots]
+Unlocks [member|name|photo|bots]
+!set rules <text>
+Set <text> as rules
+!set about <text>
+Set <text> as about
+!settings
+تنظیمات
+!newlink
+گرفتن یا عوض کردن لینک گروه
+!link
+گرفتن لینک گروه
+!owner
+returns group owner id
+!setowner [id]
+Will set id as owner
+!setflood [value]
+Set [value] as flood sensitivity
+!stats
+Simple message statistics
+!save [value] <text>
+Save <text> as [value]
+!get [value]
+Returns text of [value]
+!clean [modlist|rules|about]
+Will clear [modlist|rules|about] and set it to nil
+!res [username]
+returns user id
+"!res @username"
+!log
+will return group logs
+!banlist
+will return group ban list
+**U can use both "/" and "!" 
+*Only owner and mods can add bots in group
+*فقط مخصوص مدیران kick,ban,unban,newlink,link,setphoto,setname,lock,unlock,set rules,set about and settings commands
+*Only owner can use res,setowner,promote,demote and log commands
+]]
+
   }
   serialize_to_file(config, './data/config.lua')
-  print ('saved config into ./data/config.lua')
+  print('saved config into ./data/config.lua')
 end
 
 function on_our_id (id)
@@ -245,7 +321,7 @@ function on_user_update (user, what)
 end
 
 function on_chat_update (chat, what)
-  --vardump (chat)
+
 end
 
 function on_secret_chat_update (schat, what)
@@ -272,6 +348,7 @@ function load_plugins()
 
   end
 end
+
 
 -- custom add
 function load_data(filename)
@@ -307,8 +384,8 @@ function cron_plugins()
     end
   end
 
-  -- Called again in 5 mins
-  postpone (cron_plugins, false, 5*60.0)
+  -- Called again in 2 mins
+  postpone (cron_plugins, false, 120)
 end
 
 -- Start and load values
